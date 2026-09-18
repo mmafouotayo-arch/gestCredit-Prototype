@@ -2,5 +2,6 @@
   <Project Path="CalcMensualite.prototype/CalcMensualite.prototype.csproj" />
   <Project Path="DetCategorie.Prototype/DetCategorie.Prototype.csproj" />
   <Project Path="GestClient.Prototype/GestClient.Prototype.csproj" />
+  <Project Path="GestCredit.Console/GestCredit.Console.csproj" />
   <Project Path="GestCredit.Prototype/GestCredit.Prototype.csproj" />
 </Solution>
