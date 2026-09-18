@@ -34,3 +34,17 @@ foreach (ICalculateurInteret calculateur in calculateurs)
     decimal interet = calculateur.CalculerInteret(montant, taux, duree);
     System.Console.WriteLine($"{calculateur.NomMethode,-20} : {interet:N2} FCFA");
 }
+System.Console.WriteLine();
+System.Console.WriteLine($"Statut initial : {demande.Statut}");
+
+try
+{
+    demande.ChangerStatut(StatutDemande.Approuvee); // doit échouer : Brouillon -> Approuvee interdit
+}
+catch (TransitionInvalideException ex)
+{
+    System.Console.WriteLine($"Erreur attendue : {ex.Message}");
+}
+
+demande.ChangerStatut(StatutDemande.Soumise);
+System.Console.WriteLine($"Nouveau statut : {demande.Statut}");

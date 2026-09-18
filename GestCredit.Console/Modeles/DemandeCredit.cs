@@ -53,4 +53,25 @@ public class DemandeCredit
 
     public override string ToString() =>
         $"[{Id}] Client #{ClientId} - {Montant:N2} FCFA sur {DureeMois} mois → {Mensualite:N2} FCFA/mois";
+       
+    public StatutDemande Statut { get; private set; } = StatutDemande.Brouillon;
+
+    public void ChangerStatut(StatutDemande nouveauStatut)
+ {
+    bool transitionValide = (Statut, nouveauStatut) switch
+    {
+        (StatutDemande.Brouillon, StatutDemande.Soumise) => true,
+        (StatutDemande.Soumise, StatutDemande.EnAnalyse) => true,
+        (StatutDemande.EnAnalyse, StatutDemande.Approuvee) => true,
+        (StatutDemande.EnAnalyse, StatutDemande.Rejetee) => true,
+        _ => false
+    };
+
+    if (!transitionValide)
+    {
+        throw new TransitionInvalideException(Statut, nouveauStatut);
+    }
+
+    Statut = nouveauStatut;
+ }
 }
