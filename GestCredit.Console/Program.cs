@@ -1,50 +1,73 @@
 ﻿using GestCredit.Console.Modeles;
 
-var client = new Client("Ahmadou Bello", "Yaoundé");
-System.Console.WriteLine(client);
-
-var demande = new DemandeCredit(client.Id, 5_000_000m, 12m, 24);
-System.Console.WriteLine(demande);
-System.Console.WriteLine($"Coût total : {demande.CoutTotal:N2} FCFA");
-System.Console.WriteLine($"Intérêts   : {demande.InteretsTotaux:N2} FCFA");
-
-// Test de validation : doit lever une exception
-try
+// --- Génération d'un jeu de données ---
+List<Client> clients = new()
 {
-    var demandeInvalide = new DemandeCredit(client.Id, -1000m, 12m, 24);
-}
-catch (ArgumentException ex)
-{
-    System.Console.WriteLine($"Erreur attendue : {ex.Message}");
-}
-
-decimal montant = 5_000_000m;
-decimal taux = 12m;
-int duree = 24;
-
-List<ICalculateurInteret> calculateurs = new()
-{
-    new InteretSimple(),
-    new InteretCompose(),
-    new InteretDegressif(),
+    new Client("Ahmadou Bello", "Yaoundé"),
+    new Client("Fatima Njoya", "Douala"),
+    new Client("Jean Mballa", "Yaoundé"),
+    new Client("Aicha Souley", "Garoua"),
+    new Client("Paul Etoundi", "Douala"),
+    new Client("Marie Ngo", "Yaoundé"),
+    new Client("Ibrahim Sali", "Garoua"),
 };
 
-foreach (ICalculateurInteret calculateur in calculateurs)
+Random random = new(42); // seed fixe pour des résultats reproductibles
+string[] villesParClient = clients.Select(c => c.Ville).ToArray();
+
+List<DemandeCredit> demandes = new();
+for (int i = 0; i < 20; i++)
 {
-    decimal interet = calculateur.CalculerInteret(montant, taux, duree);
-    System.Console.WriteLine($"{calculateur.NomMethode,-20} : {interet:N2} FCFA");
+    // Exclut le dernier client (Ibrahim Sali) pour tester "clients sans demande"
+    Client client = clients[random.Next(clients.Count - 1)];
+    decimal montant = random.Next(500_000, 10_000_000);
+    decimal taux = random.Next(8, 18);
+    int duree = random.Next(6, 60);
+
+    DemandeCredit demande = new(client.Id, montant, taux, duree);
+    demandes.Add(demande);
 }
+
+// --- Rapport LINQ ---
+
+System.Console.WriteLine("Encours par statut");
+var encoursParStatut = demandes
+    .GroupBy(d => d.Statut)
+    .Select(g => new { Statut = g.Key, Total = g.Sum(d => d.Montant), Nombre = g.Count() });
+
+foreach (var ligne in encoursParStatut)
+{
+    System.Console.WriteLine($"{ligne.Statut,-12} : {ligne.Nombre} demande(s) - {ligne.Total:N2} FCFA");
+}
+
 System.Console.WriteLine();
-System.Console.WriteLine($"Statut initial : {demande.Statut}");
+System.Console.WriteLine("Top 5 des plus gros montants");
+var top5 = demandes.OrderByDescending(d => d.Montant).Take(5);
 
-try
+foreach (var d in top5)
 {
-    demande.ChangerStatut(StatutDemande.Approuvee); // doit échouer : Brouillon -> Approuvee interdit
-}
-catch (TransitionInvalideException ex)
-{
-    System.Console.WriteLine($"Erreur attendue : {ex.Message}");
+    System.Console.WriteLine(d);
 }
 
-demande.ChangerStatut(StatutDemande.Soumise);
-System.Console.WriteLine($"Nouveau statut : {demande.Statut}");
+System.Console.WriteLine();
+System.Console.WriteLine("Montant moyen par ville");
+var moyenneParVille = demandes
+    .Join(clients, d => d.ClientId, c => c.Id, (d, c) => new { d.Montant, c.Ville })
+    .GroupBy(x => x.Ville)
+    .Select(g => new { Ville = g.Key, Moyenne = g.Average(x => x.Montant) })
+    .OrderByDescending(x => x.Moyenne);
+
+foreach (var ligne in moyenneParVille)
+{
+    System.Console.WriteLine($"{ligne.Ville,-10} : {ligne.Moyenne:N2} FCFA");
+}
+
+System.Console.WriteLine();
+System.Console.WriteLine("Clients sans demande");
+var clientsSansDemande = clients
+    .Where(c => !demandes.Any(d => d.ClientId == c.Id));
+
+foreach (var c in clientsSansDemande)
+{
+    System.Console.WriteLine(c);
+}
