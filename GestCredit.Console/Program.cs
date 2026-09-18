@@ -17,3 +17,20 @@ catch (ArgumentException ex)
 {
     System.Console.WriteLine($"Erreur attendue : {ex.Message}");
 }
+
+decimal montant = 5_000_000m;
+decimal taux = 12m;
+int duree = 24;
+
+List<ICalculateurInteret> calculateurs = new()
+{
+    new InteretSimple(),
+    new InteretCompose(),
+    new InteretDegressif(),
+};
+
+foreach (ICalculateurInteret calculateur in calculateurs)
+{
+    decimal interet = calculateur.CalculerInteret(montant, taux, duree);
+    System.Console.WriteLine($"{calculateur.NomMethode,-20} : {interet:N2} FCFA");
+}
