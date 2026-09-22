@@ -2,6 +2,17 @@ namespace GestCredit.Console.Modeles;
 
 public class DemandeCredit
 {
+    [System.Text.Json.Serialization.JsonConstructor]
+ public DemandeCredit(int id, int clientId, decimal montant, decimal tauxAnnuel, int dureeMois, DateTime dateCreation, StatutDemande statut)
+ {
+    Id = id;
+    ClientId = clientId;
+    Montant = montant;
+    TauxAnnuel = tauxAnnuel;
+    DureeMois = dureeMois;
+    DateCreation = dateCreation;
+    Statut = statut;
+}
     private static int _prochainId = 1;
 
     public int Id { get; }

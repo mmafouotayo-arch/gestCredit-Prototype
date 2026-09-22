@@ -2,6 +2,13 @@ namespace GestCredit.Console.Modeles;
 
 public class Client
 {
+    [System.Text.Json.Serialization.JsonConstructor]
+ public Client(int id, string nom, string ville)
+ {
+    Id = id;
+    Nom = nom;
+    Ville = ville;
+ }
     private static int _prochainId = 1;
 
     public int Id { get; }

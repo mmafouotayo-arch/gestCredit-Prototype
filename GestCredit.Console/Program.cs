@@ -1,73 +1,176 @@
 ﻿using GestCredit.Console.Modeles;
 
-// --- Génération d'un jeu de données ---
-List<Client> clients = new()
+const string CheminClients = "clients.json";
+const string CheminDemandes = "demandes.json";
+
+List<Client> clients = await DepotJson.ChargerClientsAsync(CheminClients);
+List<DemandeCredit> demandes = await DepotJson.ChargerDemandesAsync(CheminDemandes);
+
+System.Console.WriteLine($"{clients.Count} client(s) et {demandes.Count} demande(s) chargés.");
+
+bool continuer = true;
+while (continuer)
 {
-    new Client("Ahmadou Bello", "Yaoundé"),
-    new Client("Fatima Njoya", "Douala"),
-    new Client("Jean Mballa", "Yaoundé"),
-    new Client("Aicha Souley", "Garoua"),
-    new Client("Paul Etoundi", "Douala"),
-    new Client("Marie Ngo", "Yaoundé"),
-    new Client("Ibrahim Sali", "Garoua"),
-};
+    AfficherMenu();
+    string? choix = System.Console.ReadLine();
 
-Random random = new(42); // seed fixe pour des résultats reproductibles
-string[] villesParClient = clients.Select(c => c.Ville).ToArray();
-
-List<DemandeCredit> demandes = new();
-for (int i = 0; i < 20; i++)
-{
-    // Exclut le dernier client (Ibrahim Sali) pour tester "clients sans demande"
-    Client client = clients[random.Next(clients.Count - 1)];
-    decimal montant = random.Next(500_000, 10_000_000);
-    decimal taux = random.Next(8, 18);
-    int duree = random.Next(6, 60);
-
-    DemandeCredit demande = new(client.Id, montant, taux, duree);
-    demandes.Add(demande);
+    switch (choix)
+    {
+        case "1":
+            AjouterClient(clients);
+            break;
+        case "2":
+            AjouterDemande(clients, demandes);
+            break;
+        case "3":
+            ChangerStatutDemande(demandes);
+            break;
+        case "4":
+            AfficherRapport(clients, demandes);
+            break;
+        case "5":
+            await DepotJson.SauvegarderClientsAsync(clients, CheminClients);
+            await DepotJson.SauvegarderDemandesAsync(demandes, CheminDemandes);
+            System.Console.WriteLine("Données sauvegardées.");
+            break;
+        case "6":
+            await DepotJson.SauvegarderClientsAsync(clients, CheminClients);
+            await DepotJson.SauvegarderDemandesAsync(demandes, CheminDemandes);
+            continuer = false;
+            System.Console.WriteLine("Données sauvegardées. Au revoir !");
+            break;
+        default:
+            System.Console.WriteLine("Choix invalide.");
+            break;
+    }
 }
 
-// --- Rapport LINQ ---
-
-System.Console.WriteLine("Encours par statut");
-var encoursParStatut = demandes
-    .GroupBy(d => d.Statut)
-    .Select(g => new { Statut = g.Key, Total = g.Sum(d => d.Montant), Nombre = g.Count() });
-
-foreach (var ligne in encoursParStatut)
+static void AfficherMenu()
 {
-    System.Console.WriteLine($"{ligne.Statut,-12} : {ligne.Nombre} demande(s) - {ligne.Total:N2} FCFA");
+    System.Console.WriteLine();
+    System.Console.WriteLine("GestCredit");
+    System.Console.WriteLine("1. Ajouter un client");
+    System.Console.WriteLine("2. Ajouter une demande de crédit");
+    System.Console.WriteLine("3. Changer le statut d'une demande");
+    System.Console.WriteLine("4. Afficher le rapport");
+    System.Console.WriteLine("5. Sauvegarder");
+    System.Console.WriteLine("6. Sauvegarder et quitter");
+    System.Console.Write("Votre choix : ");
 }
 
-System.Console.WriteLine();
-System.Console.WriteLine("Top 5 des plus gros montants");
-var top5 = demandes.OrderByDescending(d => d.Montant).Take(5);
-
-foreach (var d in top5)
+static void AjouterClient(List<Client> clients)
 {
-    System.Console.WriteLine(d);
+    System.Console.Write("Nom : ");
+    string nom = System.Console.ReadLine() ?? "";
+    System.Console.Write("Ville : ");
+    string ville = System.Console.ReadLine() ?? "";
+
+    try
+    {
+        clients.Add(new Client(nom, ville));
+        System.Console.WriteLine("Client ajouté.");
+    }
+    catch (ArgumentException ex)
+    {
+        System.Console.WriteLine($"Erreur : {ex.Message}");
+    }
 }
 
-System.Console.WriteLine();
-System.Console.WriteLine("Montant moyen par ville");
-var moyenneParVille = demandes
-    .Join(clients, d => d.ClientId, c => c.Id, (d, c) => new { d.Montant, c.Ville })
-    .GroupBy(x => x.Ville)
-    .Select(g => new { Ville = g.Key, Moyenne = g.Average(x => x.Montant) })
-    .OrderByDescending(x => x.Moyenne);
-
-foreach (var ligne in moyenneParVille)
+static void AjouterDemande(List<Client> clients, List<DemandeCredit> demandes)
 {
-    System.Console.WriteLine($"{ligne.Ville,-10} : {ligne.Moyenne:N2} FCFA");
+    if (!clients.Any())
+    {
+        System.Console.WriteLine("Aucun client. Ajoutez d'abord un client.");
+        return;
+    }
+
+    foreach (var c in clients) System.Console.WriteLine(c);
+    System.Console.Write("Id du client : ");
+
+    if (!int.TryParse(System.Console.ReadLine(), out int clientId) || !clients.Any(c => c.Id == clientId))
+    {
+        System.Console.WriteLine("Client invalide.");
+        return;
+    }
+
+    System.Console.Write("Montant : ");
+    decimal.TryParse(System.Console.ReadLine(), out decimal montant);
+    System.Console.Write("Taux annuel (%) : ");
+    decimal.TryParse(System.Console.ReadLine(), out decimal taux);
+    System.Console.Write("Durée (mois) : ");
+    int.TryParse(System.Console.ReadLine(), out int duree);
+
+    try
+    {
+        demandes.Add(new DemandeCredit(clientId, montant, taux, duree));
+        System.Console.WriteLine("Demande ajoutée.");
+    }
+    catch (ArgumentException ex)
+    {
+        System.Console.WriteLine($"Erreur : {ex.Message}");
+    }
 }
 
-System.Console.WriteLine();
-System.Console.WriteLine("Clients sans demande");
-var clientsSansDemande = clients
-    .Where(c => !demandes.Any(d => d.ClientId == c.Id));
-
-foreach (var c in clientsSansDemande)
+static void ChangerStatutDemande(List<DemandeCredit> demandes)
 {
-    System.Console.WriteLine(c);
+    foreach (var d in demandes) System.Console.WriteLine(d);
+    System.Console.Write("Id de la demande : ");
+
+    if (!int.TryParse(System.Console.ReadLine(), out int id))
+    {
+        System.Console.WriteLine("Id invalide.");
+        return;
+    }
+
+    DemandeCredit? demande = demandes.FirstOrDefault(d => d.Id == id);
+    if (demande is null)
+    {
+        System.Console.WriteLine("Demande introuvable.");
+        return;
+    }
+
+    System.Console.WriteLine("Nouveau statut : 1-Soumise 2-EnAnalyse 3-Approuvee 4-Rejetee");
+    string? choix = System.Console.ReadLine();
+
+    StatutDemande? nouveauStatut = choix switch
+    {
+        "1" => StatutDemande.Soumise,
+        "2" => StatutDemande.EnAnalyse,
+        "3" => StatutDemande.Approuvee,
+        "4" => StatutDemande.Rejetee,
+        _ => null
+    };
+
+    if (nouveauStatut is null)
+    {
+        System.Console.WriteLine("Choix invalide.");
+        return;
+    }
+
+    try
+    {
+        demande.ChangerStatut(nouveauStatut.Value);
+        System.Console.WriteLine("Statut mis à jour.");
+    }
+    catch (TransitionInvalideException ex)
+    {
+        System.Console.WriteLine($"Erreur : {ex.Message}");
+    }
+}
+
+static void AfficherRapport(List<Client> clients, List<DemandeCredit> demandes)
+{
+    System.Console.WriteLine();
+    System.Console.WriteLine("Encours par statut");
+    foreach (var g in demandes.GroupBy(d => d.Statut))
+    {
+        System.Console.WriteLine($"{g.Key,-12} : {g.Count()} demande(s) - {g.Sum(d => d.Montant):N2} FCFA");
+    }
+
+    System.Console.WriteLine();
+    System.Console.WriteLine("Clients sans demande");
+    foreach (var c in clients.Where(c => !demandes.Any(d => d.ClientId == c.Id)))
+    {
+        System.Console.WriteLine(c);
+    }
 }
