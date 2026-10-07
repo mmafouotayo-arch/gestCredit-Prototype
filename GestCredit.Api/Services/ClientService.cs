@@ -14,11 +14,31 @@ public class ClientService : IClientService
         _context = context;
     }
 
-    public async Task<IEnumerable<ClientDto>> GetAllAsync()
+    public async Task<PagedResultDto<ClientDto>> GetAllAsync(string? ville, string? sortBy, int page, int pageSize)
     {
-        return await _context.Clients
+        IQueryable<Client> query = _context.Clients;
+
+        if (!string.IsNullOrWhiteSpace(ville))
+        {
+            query = query.Where(c => c.Ville.Contains(ville));
+        }
+
+        query = sortBy?.ToLower() switch
+        {
+            "ville" => query.OrderBy(c => c.Ville),
+            "nom" => query.OrderBy(c => c.Nom),
+            _ => query.OrderBy(c => c.Id)
+        };
+
+        int totalCount = await query.CountAsync();
+
+        List<ClientDto> items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(c => new ClientDto(c.Id, c.Nom, c.Ville))
             .ToListAsync();
+
+        return new PagedResultDto<ClientDto>(items, page, pageSize, totalCount);
     }
 
     public async Task<ClientDto?> GetByIdAsync(int id)

@@ -4,7 +4,7 @@ namespace GestCredit.Api.Services;
 
 public interface IClientService
 {
-    Task<IEnumerable<ClientDto>> GetAllAsync();
+    Task<PagedResultDto<ClientDto>> GetAllAsync(string? ville, string? sortBy, int page, int pageSize);
     Task<ClientDto?> GetByIdAsync(int id);
     Task<ClientDto> CreateAsync(CreateClientDto dto);
     Task<bool> UpdateAsync(int id, UpdateClientDto dto);

@@ -16,9 +16,14 @@ public class ClientsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ClientDto>>> GetClients()
+    public async Task<ActionResult<PagedResultDto<ClientDto>>> GetClients(
+        [FromQuery] string? ville,
+        [FromQuery] string? sortBy,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(await _clientService.GetAllAsync());
+        var result = await _clientService.GetAllAsync(ville, sortBy, page, pageSize);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
