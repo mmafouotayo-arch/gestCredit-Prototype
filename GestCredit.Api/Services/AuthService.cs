@@ -22,22 +22,24 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        bool nomExiste = await _context.Utilisateurs.AnyAsync(u => u.NomUtilisateur == dto.NomUtilisateur);
-        if (nomExiste)
+        if (await _context.Utilisateurs.AnyAsync(u => u.NomUtilisateur == dto.NomUtilisateur))
         {
             throw new ArgumentException("Ce nom d'utilisateur est déjà pris.", nameof(dto.NomUtilisateur));
         }
 
-        Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Nom == dto.Role);
-        if (role is null)
+        if (await _context.Utilisateurs.AnyAsync(u => u.Email == dto.Email))
         {
-            throw new ArgumentException($"Le rôle '{dto.Role}' n'existe pas.", nameof(dto.Role));
+            throw new ArgumentException("Cet email est déjà utilisé.", nameof(dto.Email));
         }
+
+        // L'auto-inscription crée toujours un Agent : les autres rôles
+        // sont attribués par un administrateur (voir ChangerRoleAsync).
+        Role roleAgent = await _context.Roles.FirstAsync(r => r.Nom == "Agent");
 
         string motDePasseHash = BCrypt.Net.BCrypt.HashPassword(dto.MotDePasse);
 
         var utilisateur = new Utilisateur(dto.NomUtilisateur, motDePasseHash, dto.Email);
-        utilisateur.Roles.Add(role);
+        utilisateur.Roles.Add(roleAgent);
 
         _context.Utilisateurs.Add(utilisateur);
         await _context.SaveChangesAsync();
@@ -57,6 +59,30 @@ public class AuthService : IAuthService
         }
 
         return GenererReponse(utilisateur);
+    }
+
+    public async Task<bool> ChangerRoleAsync(int utilisateurId, string nomRole)
+    {
+        Utilisateur? utilisateur = await _context.Utilisateurs
+            .Include(u => u.Roles)
+            .FirstOrDefaultAsync(u => u.Id == utilisateurId);
+
+        if (utilisateur is null)
+        {
+            return false;
+        }
+
+        Role? role = await _context.Roles.FirstOrDefaultAsync(r => r.Nom == nomRole);
+        if (role is null)
+        {
+            throw new ArgumentException($"Le rôle '{nomRole}' n'existe pas.", nameof(nomRole));
+        }
+
+        utilisateur.Roles.Clear();
+        utilisateur.Roles.Add(role);
+        await _context.SaveChangesAsync();
+
+        return true;
     }
 
     private AuthResponseDto GenererReponse(Utilisateur utilisateur)

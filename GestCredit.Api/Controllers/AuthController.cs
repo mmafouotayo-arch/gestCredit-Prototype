@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GestCredit.Api.DTOs;
 using GestCredit.Api.Services;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GestCredit.Api.Controllers;
 
@@ -23,7 +24,8 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
+[EnableRateLimiting("login")]
+public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);
         return Ok(result);

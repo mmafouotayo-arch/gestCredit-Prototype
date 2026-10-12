@@ -24,25 +24,27 @@ public class ExceptionHandlingMiddleware
         {
             string correlationId = Guid.NewGuid().ToString();
 
+            // Le détail complet reste dans les logs du serveur
             _logger.LogError(ex, "Erreur non gérée. CorrelationId: {CorrelationId}", correlationId);
 
-            context.Response.ContentType = "application/json";
-
-            context.Response.StatusCode = ex switch
-{
-    ArgumentException => StatusCodes.Status400BadRequest,
-    UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-    TransitionInvalideException => StatusCodes.Status409Conflict,
-    _ => StatusCodes.Status500InternalServerError
-};
-
-            var payload = new
+            int statusCode = ex switch
             {
-                error = ex.Message,
-                correlationId
+                ArgumentException => StatusCodes.Status400BadRequest,
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                TransitionInvalideException => StatusCodes.Status409Conflict,
+                _ => StatusCodes.Status500InternalServerError
             };
 
-            await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+            // Les erreurs 4xx portent un message métier destiné au client.
+            // Une erreur 500 ne doit JAMAIS exposer de détail interne (SQL, chemins, pile d'appels).
+            string message = statusCode == StatusCodes.Status500InternalServerError
+                ? "Une erreur interne est survenue. Communiquez l'identifiant de corrélation au support."
+                : ex.Message;
+
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = message, correlationId }));
         }
     }
 }
