@@ -84,12 +84,114 @@ namespace GestCredit.Api.Migrations
                     b.ToTable("DemandesCredit", (string)null);
                 });
 
+            modelBuilder.Entity("GestCredit.Api.Models.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Nom")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nom")
+                        .IsUnique();
+
+                    b.ToTable("Roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Nom = "Agent"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Nom = "Analyste"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Nom = "Administrateur"
+                        });
+                });
+
+            modelBuilder.Entity("GestCredit.Api.Models.Utilisateur", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("MotDePasseHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("NomUtilisateur")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("NomUtilisateur")
+                        .IsUnique();
+
+                    b.ToTable("Utilisateurs", (string)null);
+                });
+
+            modelBuilder.Entity("RoleUtilisateur", b =>
+                {
+                    b.Property<int>("RolesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UtilisateurId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RolesId", "UtilisateurId");
+
+                    b.HasIndex("UtilisateurId");
+
+                    b.ToTable("UtilisateursRoles", (string)null);
+                });
+
             modelBuilder.Entity("GestCredit.Api.Models.DemandeCredit", b =>
                 {
                     b.HasOne("GestCredit.Api.Models.Client", null)
                         .WithMany()
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RoleUtilisateur", b =>
+                {
+                    b.HasOne("GestCredit.Api.Models.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RolesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestCredit.Api.Models.Utilisateur", null)
+                        .WithMany()
+                        .HasForeignKey("UtilisateurId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

@@ -18,7 +18,7 @@ public class DemandeCredit
     DateCreation = dateCreation;
     Statut = statut;
 }
-    private static int _prochainId = 1;
+   
 
     public int Id { get; private set; }
 public int ClientId { get; private set; }
@@ -58,7 +58,7 @@ public DateTime DateCreation { get; private set; }
             throw new ArgumentException("La durée doit être comprise entre 1 et 360 mois.", nameof(dureeMois));
         }
 
-        Id = _prochainId++;
+        
         ClientId = clientId;
         Montant = montant;
         TauxAnnuel = tauxAnnuel;

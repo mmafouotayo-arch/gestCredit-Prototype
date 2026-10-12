@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GestCredit.Api.Models;
 
 namespace GestCredit.Api.Middleware;
 
@@ -28,10 +29,12 @@ public class ExceptionHandlingMiddleware
             context.Response.ContentType = "application/json";
 
             context.Response.StatusCode = ex switch
-            {
-                ArgumentException => StatusCodes.Status400BadRequest,
-                _ => StatusCodes.Status500InternalServerError
-            };
+{
+    ArgumentException => StatusCodes.Status400BadRequest,
+    UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+    TransitionInvalideException => StatusCodes.Status409Conflict,
+    _ => StatusCodes.Status500InternalServerError
+};
 
             var payload = new
             {

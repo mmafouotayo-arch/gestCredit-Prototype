@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using GestCredit.Api.DTOs;
 using GestCredit.Api.Services;
-
+using Microsoft.AspNetCore.Authorization;
 namespace GestCredit.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ClientsController : ControllerBase
 {
     private readonly IClientService _clientService;
@@ -34,13 +35,15 @@ public class ClientsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<ClientDto>> CreateClient(CreateClientDto dto)
+[Authorize(Roles = "Agent,Administrateur")]
+public async Task<ActionResult<ClientDto>> CreateClient(CreateClientDto dto)
     {
         var client = await _clientService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetClient), new { id = client.Id }, client);
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Agent,Administrateur")]
     public async Task<IActionResult> UpdateClient(int id, UpdateClientDto dto)
     {
         bool updated = await _clientService.UpdateAsync(id, dto);
@@ -48,6 +51,7 @@ public class ClientsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Agent,Administrateur")]
     public async Task<IActionResult> DeleteClient(int id)
     {
         bool deleted = await _clientService.DeleteAsync(id);
